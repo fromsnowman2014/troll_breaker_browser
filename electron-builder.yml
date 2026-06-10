@@ -1,0 +1,18 @@
+appId: com.truthandstrike.app
+productName: Truth & Strike
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**/*
+  - package.json
+asarUnpack:
+  # No native modules in Phase 0. Document for Phase 1 (keytar / better-sqlite3 etc. would go here).
+  - "**/*.node"
+mac:
+  target: dmg
+  category: public.app-category.productivity
+win:
+  target: nsis
+linux:
+  target: AppImage

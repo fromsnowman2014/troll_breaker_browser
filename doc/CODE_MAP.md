@@ -1,13 +1,15 @@
 # Code Map — Native Browser
 
-> Last updated: 2026-06-09 (no code yet — this is the intended layout)
-> Update protocol: see [`../CLAUDE.md`](../CLAUDE.md) → "Source Code Map". When code lands, replace this section with the real tree.
+> Last updated: 2026-06-09 (Phase 0 shell landed)
+> Update protocol: see [`../CLAUDE.md`](../CLAUDE.md) → "Source Code Map".
 
-This file is a skeleton. It mirrors [`ARCHITECTURE.md`](./ARCHITECTURE.md) §7. Once the first real source file lands under `src/`, update this file in the same commit and remove the "intended" prefix.
+Phase 0 modules are **LIVE**. Phase 1+ modules are **STUB** (interface + `throw "Phase N"` body). See [`ROADMAP.md`](./ROADMAP.md) for phase boundaries.
+
+Phase 0 status: ✅ shipped 2026-06-09 — Electron 42 shell + tabs + URL bar + nav buttons + find-in-page + placeholder settings drawer + session restore + page preload installed (unused). 43 Vitest tests green.
 
 ---
 
-## Module tree (intended — pending implementation)
+## Module tree
 
 - `src/main/` — Electron main process
   - `index.ts` — entry: create window, register IPC, install app menu
@@ -136,14 +138,38 @@ Native-only types introduced in this folder:
 - **Tab ↔ chrome**: `tab_manager.ts` is the source of truth; renderer state is a mirror that lags by ≤ 1 event tick.
 - **Page preload**: only three IPC responses, opaque tokens, 120-s TTL.
 
-## Known gaps / TODO (no code yet)
+## Phase 0 — LIVE vs STUB summary
 
-- Everything in this map is **intended**. No source file exists yet.
-- Decision required from owner before any code:
-  - DR-1: Confirm Electron shell choice ([`TECH_STACK.md`](./TECH_STACK.md) §1).
-  - DR-2: Pin Electron major version.
-  - DR-3: Confirm Anthropic as default LLM ([`TECH_STACK.md`](./TECH_STACK.md) §3).
-  - DR-4: Confirm Brave Search as default ([`TECH_STACK.md`](./TECH_STACK.md) §4).
-  - DR-5: Acquire signing certs before v1 ([`TECH_STACK.md`](./TECH_STACK.md) §7.2).
-- Phase 0 spikes ([`TECH_STACK.md`](./TECH_STACK.md) §12) — confirm all six pass before scaling.
-- Update this file the moment the first `src/main/index.ts` lands, per [`../CLAUDE.md`](../CLAUDE.md) protocol.
+**LIVE (working code, Phase 0):**
+- `src/main/index.ts`, `src/main/window.ts` — entry + window creation
+- `src/main/tabs/{tab_manager,tab,omnibox,session}.ts` — full tab lifecycle
+- `src/main/ipc/{router,handlers.tab,handlers.drawer}.ts` — IPC routing for tabs + drawer
+- `src/main/menus/{app_menu,shortcuts}.ts` — menu + accelerators
+- `src/main/shared/{ipc-channels,errors,types}.ts` + `shared/schemas/{settings,ipc,index}.ts` — every schema locked
+- `src/main/lib/llm/{types,mock,index}.ts`, `lib/search/{types,mock}.ts`, `lib/storage/kv.ts` — interfaces + mocks
+- `src/chrome-renderer/**` — every React component except STUB-marked ones
+- `src/page-preload/preload.ts` — 3 responders installed (main does not yet invoke)
+- `tests/{omnibox,settings_schema,ipc_schema,session,llm_stubs}.test.ts` — 43 tests green
+
+**STUB (interface only, throws "Phase N"):**
+- `src/main/ipc/{handlers.settings,handlers.agent,handlers.page}.ts` — agent/settings mutations
+- `src/main/orchestrator/{orchestrator,cancellation}.ts` — pipeline registry shapes
+- `src/main/agents/*` — empty exports
+- `src/main/lib/llm/{anthropic,openai,gemini,structured}.ts` — adapters
+- `src/main/lib/search/brave.ts`
+- `src/main/lib/storage/{disk,secrets}.ts`
+- `src/chrome-renderer/state/{agent,chat}.ts` — agent/chat slices
+- `src/chrome-renderer/components/{OutputFrame,ChatFrame,DefenseCard,AttackCard}.tsx` — placeholder `null` components
+
+## Decisions resolved during Phase 0
+
+- **DR-1:** ✅ Electron (42.4.0) — confirmed.
+- **DR-2:** ✅ Electron 42 pinned for Phase 0; revisit at Phase 1.
+- **Vite version:** ⚠ Pinned to 7.3.5 because `@vitejs/plugin-react@6` requires Vite 8. Revisit at Phase 1 once plugin-react 6 + Vite 8 ecosystem stabilizes.
+- **TypeScript 6.0:** `baseUrl` deprecated — removed from `tsconfig.json` (kept `paths` only).
+
+## Decisions still pending (Phase 1+)
+
+- **DR-3:** Confirm Anthropic as default LLM ([`TECH_STACK.md`](./TECH_STACK.md) §3).
+- **DR-4:** Confirm Brave Search as default ([`TECH_STACK.md`](./TECH_STACK.md) §4).
+- **DR-5:** Acquire signing certs before v1 ([`TECH_STACK.md`](./TECH_STACK.md) §7.2).

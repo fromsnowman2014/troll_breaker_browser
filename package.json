@@ -1,0 +1,45 @@
+{
+  "name": "truth-and-strike",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Native browser for online debate. Phase 0 — shell only.",
+  "main": "out/main/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "package": "electron-vite build && electron-builder",
+    "package:dir": "electron-vite build && electron-builder --dir"
+  },
+  "dependencies": {
+    "ulid": "3.0.2",
+    "zod": "4.4.3",
+    "zustand": "5.0.14"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.0",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "25.9.2",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.0.4",
+    "electron": "42.4.0",
+    "electron-builder": "26.15.2",
+    "electron-vite": "4.0.1",
+    "jsdom": "29.1.1",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "tailwindcss": "4.3.0",
+    "typescript": "6.0.3",
+    "vite": "7.3.5",
+    "vite-tsconfig-paths": "6.1.1",
+    "vitest": "4.1.8"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

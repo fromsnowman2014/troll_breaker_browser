@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
+    "target": "ES2023",
+    "types": ["node"],
+    "outDir": "out/types/node"
+  },
+  "include": [
+    "src/main/**/*.ts",
+    "src/chrome-renderer/preload.ts",
+    "src/page-preload/**/*.ts",
+    "electron.vite.config.ts",
+    "vitest.config.ts"
+  ]
+}

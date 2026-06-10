@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0f0f12;
+  --color-bg-elev: #1b1b1f;
+  --color-fg: #e7e7ea;
+  --color-fg-muted: #9a9aa3;
+  --color-accent: #7c7cff;
+  --color-border: #2a2a30;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-danger: #ef4444;
+
+  --radius-card: 8px;
+  --radius-drawer: 10px;
+  --radius-pill: 9999px;
+
+  --spacing-tabstrip: 36px;
+  --spacing-urlbar: 40px;
+  --spacing-navrow: 56px;
+}

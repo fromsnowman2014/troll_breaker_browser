@@ -14,4 +14,26 @@ export type {
   RefineRequest,
 } from "./schemas/ipc.js";
 
+export type {
+  Source,
+  FactVerdict,
+  FactResult,
+  VibeProfile,
+  FallacyType,
+  Fallacy,
+  EvalScore,
+  Pipeline,
+  ShieldResult,
+  SwordResult,
+  RefineResult,
+  DefenseResult,
+  AttackResult,
+  AgentResultPayload,
+  AgentStage,
+  AgentProgressEvt,
+  AgentResultEvt,
+  AgentErrorEvt,
+  ChatTurn,
+} from "./schemas/agents.js";
+
 export type { AppError, AppErrorCode } from "./errors.js";

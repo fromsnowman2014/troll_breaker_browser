@@ -39,6 +39,14 @@ export const IPC = {
   UI_AGENT_REFINE: "ui:agent:refine",
   UI_AGENT_CANCEL: "ui:agent:cancel",
 
+  // Agent events (main → renderer)
+  EVT_AGENT_PROGRESS: "evt:agent:progress",
+  EVT_AGENT_RESULT: "evt:agent:result",
+  EVT_AGENT_ERROR: "evt:agent:error",
+
+  // Updater events (Phase 5)
+  EVT_UPDATER_STATUS: "evt:updater:status",
+
   // Tab events (main → renderer)
   EVT_TAB_TITLE: "evt:tab:title",
   EVT_TAB_URL: "evt:tab:url",
@@ -53,10 +61,21 @@ export const IPC = {
   // Menu events (main → renderer)
   EVT_MENU: "evt:menu",
 
-  // Page preload bridge (used in Phase 1; defined here to lock contract)
+  // Page preload bridge (main ↔ preload)
   PAGE_SELECTION_GET: "page:selection:get",
   PAGE_TEXTAREA_FOCUSED: "page:textarea:focused",
   PAGE_TEXTAREA_INSERT: "page:textarea:insert",
+
+  // Renderer → main proxies to the active tab's preload
+  UI_PAGE_SELECTION: "ui:page:selection",
+  UI_PAGE_TEXTAREA_FOCUSED: "ui:page:textarea_focused",
+  UI_PAGE_TEXTAREA_INSERT: "ui:page:textarea_insert",
+
+  // About / Privacy / Updater (Phase 5)
+  UI_ABOUT_GET: "ui:about:get",
+  UI_OPEN_EXTERNAL: "ui:open:external",
+  UI_UPDATER_CHECK: "ui:updater:check",
+  UI_UPDATER_INSTALL: "ui:updater:install",
 } as const;
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC];

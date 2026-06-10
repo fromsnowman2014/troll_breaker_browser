@@ -171,6 +171,12 @@ export class TabManager {
     return this.activeId;
   }
 
+  activeWebContents(): Electron.WebContents | null {
+    if (!this.activeId) return null;
+    const tab = this.tabs.get(this.activeId);
+    return tab?.view.webContents ?? null;
+  }
+
   // ─────────────────────────────────────────────
   // internals
   // ─────────────────────────────────────────────

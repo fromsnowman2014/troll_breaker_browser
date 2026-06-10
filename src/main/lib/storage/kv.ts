@@ -1,5 +1,5 @@
-// TTL-aware KV interface used by vibe / fact caches. Phase 1 lands the disk
-// implementation; this is the contract.
+// TTL-aware KV interface used by vibe / fact caches.
+// Implementations: disk.ts (DiskKv), memory.ts (InMemoryKv + LayeredKv).
 
 export interface KvStore {
   get<T>(key: string): Promise<T | null>;

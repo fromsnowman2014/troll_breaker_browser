@@ -15,9 +15,13 @@ import { registerDrawerHandlers } from "./ipc/handlers.drawer.js";
 import { registerSettingsHandlers } from "./ipc/handlers.settings.js";
 import { registerAgentHandlers } from "./ipc/handlers.agent.js";
 import { registerPageHandlers } from "./ipc/handlers.page.js";
+import { registerAboutHandlers } from "./ipc/handlers.about.js";
 import { installAppMenu } from "./menus/app_menu.js";
 import { IPC } from "./shared/ipc-channels.js";
 import { EmptyReqSchema } from "./shared/schemas/ipc.js";
+import { registerVibeRefresh } from "./agents/vibe.js";
+import { refreshIfStale } from "./agents/vibe_refresh.js";
+import { initUpdater } from "./lib/updater.js";
 
 let mainWindow: BrowserWindow | null = null;
 let tabManager: TabManager | null = null;
@@ -26,11 +30,15 @@ function registerCoreHandlers(): void {
   // Smoke channel — verifies the IPC pipeline end-to-end.
   register(IPC.UI_PING, EmptyReqSchema.optional(), () => "pong" as const);
 
+  // Wire vibe refresh so the orchestrator can fire it without a static import.
+  registerVibeRefresh((opts) => refreshIfStale(opts));
+
   registerTabHandlers(() => tabManager);
   registerDrawerHandlers();
   registerSettingsHandlers();
   registerAgentHandlers();
-  registerPageHandlers();
+  registerPageHandlers(() => tabManager);
+  registerAboutHandlers();
 }
 
 async function bootstrap(): Promise<void> {
@@ -51,6 +59,8 @@ async function bootstrap(): Promise<void> {
   } else {
     tabManager.openTab("about:blank");
   }
+
+  initUpdater();
 
   mainWindow.on("closed", () => {
     mainWindow = null;

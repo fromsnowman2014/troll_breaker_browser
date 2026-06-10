@@ -4,7 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "nodenext",
     "target": "ES2023",
-    "types": ["node"],
+    "types": ["node", "vite/client"],
     "outDir": "out/types/node"
   },
   "include": [

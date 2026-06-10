@@ -61,7 +61,7 @@ ipcRenderer.on("page:textarea:focused", (_event, replyChannel: string) => {
 
 ipcRenderer.on(
   "page:textarea:insert",
-  (_event, payload: { token: string; text: string }, replyChannel: string) => {
+  (_event, replyChannel: string, payload: { token: string; text: string }) => {
     const el = resolveToken(payload.token);
     if (!el) {
       ipcRenderer.send(replyChannel, { ok: false, reason: "textarea_token_stale" });

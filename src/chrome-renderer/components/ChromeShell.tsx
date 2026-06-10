@@ -1,10 +1,6 @@
 // Top-level composition: TabStrip + NavRow at top, Viewport spacer below.
-// The page renderer (WebContentsView) lives behind the chrome; we don't
-// render it in React — main positions it via setBounds.
-//
-// ChromeShell is also responsible for telling main its top-inset so the
-// active WebContentsView resizes to fit. We measure on mount + on window
-// resize, debouncing the message to main at ~100ms.
+// AgentPanel docks bottom-right when active. WelcomePage overlays when no
+// LLM key is configured.
 
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { ipc } from "../ipc.js";
@@ -13,10 +9,16 @@ import { NavRow } from "./NavRow.js";
 import { SettingsDrawer } from "./SettingsDrawer.js";
 import { FindBar } from "./FindBar.js";
 import { Toast } from "./Toast.js";
+import { AgentPanel } from "./AgentPanel.js";
+import { WelcomePage } from "./WelcomePage.js";
+import { UpdaterToast } from "./UpdaterToast.js";
+import { useSettingsStore } from "../state/settings.js";
 
 export function ChromeShell() {
   const chromeRef = useRef<HTMLDivElement>(null);
   const lastSent = useRef<number>(-1);
+  const hydrated = useSettingsStore((s) => s.hydrated);
+  const hasLlmKey = useSettingsStore((s) => s.view.key_present.llm.present);
 
   function syncBounds() {
     const el = chromeRef.current;
@@ -45,20 +47,22 @@ export function ChromeShell() {
     };
   }, []);
 
+  const showWelcome = hydrated && !hasLlmKey;
+
   return (
     <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-[var(--color-bg)] text-[var(--color-fg)]">
       <div ref={chromeRef} className="z-10 flex flex-col">
         <TabStrip />
         <NavRow />
       </div>
-      {/* Viewport spacer — the actual web content is rendered by main's
-          WebContentsView, positioned below the chrome row. This div is
-          intentionally empty in React land. */}
       <main className="relative flex-1" aria-hidden="true">
         <FindBar />
+        {showWelcome && <WelcomePage />}
+        <AgentPanel />
       </main>
       <SettingsDrawer />
       <Toast />
+      <UpdaterToast />
     </div>
   );
 }

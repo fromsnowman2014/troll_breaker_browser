@@ -1,11 +1,19 @@
 # Code Map — Native Browser
 
-> Last updated: 2026-06-09 (Phase 0 shell landed)
+> Last updated: 2026-06-10 (Phase 1~5 implemented)
 > Update protocol: see [`../CLAUDE.md`](../CLAUDE.md) → "Source Code Map".
 
-Phase 0 modules are **LIVE**. Phase 1+ modules are **STUB** (interface + `throw "Phase N"` body). See [`ROADMAP.md`](./ROADMAP.md) for phase boundaries.
+All modules are now **LIVE**. See [`ROADMAP.md`](./ROADMAP.md) for what each phase delivered.
 
-Phase 0 status: ✅ shipped 2026-06-09 — Electron 42 shell + tabs + URL bar + nav buttons + find-in-page + placeholder settings drawer + session restore + page preload installed (unused). 43 Vitest tests green.
+Phase status:
+- Phase 0 ✅ shipped 2026-06-09 — Electron 42 shell + tabs + URL bar + find-in-page + page preload
+- Phase 1 ✅ shipped 2026-06-10 — Defense Fast (Anthropic + Brave + DiskKv + SecretsStore + vibe/fact agents + fmkorea seed + WelcomePage + SettingsDrawer)
+- Phase 2 ✅ shipped 2026-06-10 — Attack Fast + Refinement (evaluator + finalize + OpenAI + Gemini + AttackCard + ScoreBars + Insert-back + theqoo seed)
+- Phase 3 ✅ shipped 2026-06-10 — Logic agent + Standard pipeline + quick-action chips + VibeBadge expander
+- Phase 4 ✅ shipped 2026-06-10 — vibe auto-refresh (cheerio + Electron net) + 4 site extractors + ruliweb/dcinside seeds + source pin/hide UX
+- Phase 5 ✅ shipped 2026-06-10 — electron-updater + GitHub Releases publish + PrivacyPage + About + entitlements + SIGNING.md + PRIVACY_POLICY.md
+
+131 Vitest tests green. typecheck clean. build success.
 
 ---
 

@@ -1,4 +1,4 @@
-// Provider factory. Phase 1 wires this into the orchestrator.
+// Provider factory.
 
 import { AnthropicClient } from "./anthropic.js";
 import { OpenAIClient } from "./openai.js";
@@ -21,4 +21,5 @@ export function createLlmClient(
   }
 }
 
-export type { LlmClient, LlmChatRequest, LlmChatResponse } from "./types.js";
+export { structuredChat } from "./structured.js";
+export type { LlmClient, LlmChatRequest, LlmChatResponse, LlmMessage, LlmToolDef, LlmToolCall } from "./types.js";

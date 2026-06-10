@@ -214,6 +214,9 @@ export const REQUEST_SCHEMAS = {
   [IPC.UI_AGENT_ATTACK]: AttackRequestSchema,
   [IPC.UI_AGENT_REFINE]: RefineRequestSchema,
   [IPC.UI_AGENT_CANCEL]: AgentCancelReqSchema,
+  [IPC.UI_PAGE_SELECTION]: EmptyReqSchema.optional(),
+  [IPC.UI_PAGE_TEXTAREA_FOCUSED]: EmptyReqSchema.optional(),
+  [IPC.UI_PAGE_TEXTAREA_INSERT]: PageTextareaInsertReqSchema,
 } as const;
 
 export type RequestSchemas = typeof REQUEST_SCHEMAS;

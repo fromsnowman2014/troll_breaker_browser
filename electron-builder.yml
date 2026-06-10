@@ -1,5 +1,6 @@
 appId: com.truthandstrike.app
 productName: Truth & Strike
+artifactName: "${productName}-${version}-${os}-${arch}.${ext}"
 directories:
   output: dist
   buildResources: build
@@ -7,12 +8,44 @@ files:
   - out/**/*
   - package.json
 asarUnpack:
-  # No native modules in Phase 0. Document for Phase 1 (keytar / better-sqlite3 etc. would go here).
   - "**/*.node"
+
+# Auto-update feed via GitHub Releases. Owner must set GH_TOKEN locally for
+# publishing; users get updates automatically once they have a signed build.
+publish:
+  - provider: github
+    owner: fromsnowman2014
+    repo: troll_breaker_browser
+    releaseType: release
+
 mac:
-  target: dmg
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
   category: public.app-category.productivity
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize: false # toggle to true when Apple Developer ID is configured (see doc/SIGNING.md)
+
 win:
-  target: nsis
+  target:
+    - target: nsis
+      arch:
+        - x64
+  # When CSC_LINK + CSC_KEY_PASSWORD are set in the env, electron-builder
+  # signs automatically. SmartScreen reputation requires EV cert (see SIGNING.md).
+  signtoolOptions:
+    publisherName: "Truth & Strike"
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+
 linux:
   target: AppImage
+  category: Network

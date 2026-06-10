@@ -11,10 +11,13 @@
     "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "package": "electron-vite build && electron-builder",
     "package:dir": "electron-vite build && electron-builder --dir"
   },
   "dependencies": {
+    "cheerio": "^1.2.0",
+    "electron-updater": "^6.8.9",
     "ulid": "3.0.2",
     "zod": "4.4.3",
     "zustand": "5.0.14"

@@ -8,6 +8,12 @@ import type {
   Settings,
   SettingsView,
   TabSummary,
+  DefenseRequest,
+  AttackRequest,
+  RefineRequest,
+  AgentProgressEvt,
+  AgentResultEvt,
+  AgentErrorEvt,
 } from "../main/shared/types.js";
 
 type Reply<T> = { ok: true; data: T } | { ok: false; error: AppError };
@@ -58,14 +64,57 @@ export const ipc = {
   drawerOpen: () => call<{ ok: true }>(IPC.UI_DRAWER_OPEN),
   drawerClose: () => call<{ ok: true }>(IPC.UI_DRAWER_CLOSE),
 
-  // Settings (Phase 0 only `get`)
+  // Settings
   settingsGet: () => call<SettingsView>(IPC.UI_SETTINGS_GET),
   settingsSet: (partial: Partial<Settings>) =>
     call<SettingsView>(IPC.UI_SETTINGS_SET, partial),
+  settingsPutKey: (which: "llm" | "search", key: string) =>
+    call<{ ok: true }>(IPC.UI_SETTINGS_PUT_KEY, { which, key }),
+  settingsClearKey: (which: "llm" | "search") =>
+    call<{ ok: true }>(IPC.UI_SETTINGS_CLEAR_KEY, { which }),
+  settingsTestLlm: () =>
+    call<{ ok: boolean; latency_ms?: number; error?: string }>(IPC.UI_SETTINGS_TEST_LLM),
+  settingsResetAll: () => call<SettingsView>(IPC.UI_SETTINGS_RESET_ALL),
+  settingsClearBrowsingData: (req: { cookies?: boolean; cache?: boolean; history?: boolean }) =>
+    call<{ ok: true }>(IPC.UI_SETTINGS_CLEAR_BROWSING_DATA, req),
+
+  // Agents
+  agentDefense: (req: DefenseRequest) =>
+    call<{ request_id: string }>(IPC.UI_AGENT_DEFENSE, req),
+  agentAttack: (req: AttackRequest) =>
+    call<{ request_id: string }>(IPC.UI_AGENT_ATTACK, req),
+  agentRefine: (req: RefineRequest) =>
+    call<{ request_id: string }>(IPC.UI_AGENT_REFINE, req),
+  agentCancel: (request_id: string) =>
+    call<{ ok: true }>(IPC.UI_AGENT_CANCEL, { request_id }),
+
+  // Page bridge (proxies to the active tab's page-preload)
+  pageTextareaFocused: () =>
+    call<{ has_focus: boolean; token?: string; hint?: string }>(IPC.UI_PAGE_TEXTAREA_FOCUSED),
+  pageTextareaInsert: (token: string, text: string) =>
+    call<{ ok: boolean; reason?: string }>(IPC.UI_PAGE_TEXTAREA_INSERT, { token, text }),
+  pageSelection: () =>
+    call<{ text: string; url: string } | { has_focus: false }>(IPC.UI_PAGE_SELECTION),
+
+  // About / Updater
+  aboutGet: () =>
+    call<{ version: string; electron: string; chrome: string; node: string; platform: string }>(
+      IPC.UI_ABOUT_GET,
+    ),
+  openExternal: (url: string) => call<{ ok: true }>(IPC.UI_OPEN_EXTERNAL, { url }),
+  updaterCheck: () => call<{ ok: true }>(IPC.UI_UPDATER_CHECK),
+  updaterInstall: () => call<{ ok: true }>(IPC.UI_UPDATER_INSTALL),
 
   // Event subscriptions
   on: (channel: string, handler: (payload: unknown) => void) =>
     window.truthAndStrike.on(channel, handler),
+
+  onAgentProgress: (handler: (evt: AgentProgressEvt) => void) =>
+    window.truthAndStrike.on(IPC.EVT_AGENT_PROGRESS, (p) => handler(p as AgentProgressEvt)),
+  onAgentResult: (handler: (evt: AgentResultEvt) => void) =>
+    window.truthAndStrike.on(IPC.EVT_AGENT_RESULT, (p) => handler(p as AgentResultEvt)),
+  onAgentError: (handler: (evt: AgentErrorEvt) => void) =>
+    window.truthAndStrike.on(IPC.EVT_AGENT_ERROR, (p) => handler(p as AgentErrorEvt)),
 };
 
 export { IPC };

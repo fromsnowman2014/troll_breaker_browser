@@ -21,16 +21,21 @@ vi.mock("electron", () => ({
 
 const handlers = new Map<string, (...args: unknown[]) => void>();
 
-vi.mock("electron-updater", () => ({
-  autoUpdater: {
-    autoDownload: false,
-    autoInstallOnAppQuit: false,
-    on: (ev: string, fn: (...args: unknown[]) => void) => {
-      handlers.set(ev, fn);
-    },
-    checkForUpdates: () => Promise.resolve(undefined),
-    quitAndInstall: () => undefined,
+// Mock matches the CJS interop pattern in src/main/lib/updater.ts:
+// `import pkg from "electron-updater"; const { autoUpdater } = pkg;`
+const mockAutoUpdater = {
+  autoDownload: false,
+  autoInstallOnAppQuit: false,
+  on: (ev: string, fn: (...args: unknown[]) => void) => {
+    handlers.set(ev, fn);
   },
+  checkForUpdates: () => Promise.resolve(undefined),
+  quitAndInstall: () => undefined,
+};
+
+vi.mock("electron-updater", () => ({
+  default: { autoUpdater: mockAutoUpdater },
+  autoUpdater: mockAutoUpdater, // keep named export for any future direct imports
 }));
 
 beforeEach(() => {

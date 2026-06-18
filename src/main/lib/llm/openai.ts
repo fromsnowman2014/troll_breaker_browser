@@ -70,9 +70,6 @@ export class OpenAIClient implements LlmClient {
   }
 
   async chat(req: LlmChatRequest): Promise<LlmChatResponse> {
-    if (!this.apiKey) {
-      throw new IpcError(makeError("no_api_key", "OpenAI API key missing"));
-    }
     const body: Record<string, unknown> = {
       model: req.model,
       messages: toOpenAIMessages(req.messages),

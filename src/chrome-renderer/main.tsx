@@ -1,6 +1,7 @@
-import { StrictMode, useEffect } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ChromeShell } from "./components/ChromeShell.js";
+import { WelcomePage, needsOnboarding } from "./components/WelcomePage.js";
 import { wireTabEvents, refreshTabList } from "./state/tabs.js";
 import { useMenuRouting, useEscapeRouting } from "./lib/hotkeys.js";
 import { useSettingsStore } from "./state/settings.js";
@@ -10,6 +11,7 @@ import "./styles/tailwind.css";
 import "./styles/globals.css";
 
 function App() {
+  const [onboarding, setOnboarding] = useState(needsOnboarding);
   useMenuRouting();
   useEscapeRouting();
 
@@ -48,7 +50,12 @@ function App() {
     };
   }, []);
 
-  return <ChromeShell />;
+  return (
+    <>
+      <ChromeShell />
+      {onboarding && <WelcomePage onDone={() => setOnboarding(false)} />}
+    </>
+  );
 }
 
 const rootEl = document.getElementById("root");

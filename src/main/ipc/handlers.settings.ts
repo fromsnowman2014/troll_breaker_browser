@@ -26,7 +26,6 @@ import {
 } from "../shared/schemas/settings.js";
 import type { Settings, SettingsView } from "../shared/schemas/settings.js";
 import { SecretsStore } from "../lib/storage/secrets.js";
-import { createLlmClient } from "../lib/llm/index.js";
 
 const SETTINGS_FILE = "settings.json";
 
@@ -128,14 +127,12 @@ class SettingsManager {
     view.ui = this.settings.ui;
     view.privacy = this.settings.privacy;
     view.encryption_available = this.secrets.isEncryptionAvailable();
-    const [llmHas, llmLast4, srchHas, srchLast4] = await Promise.all([
-      this.secrets.hasKey("llm"),
-      this.secrets.last4("llm"),
+    const [srchHas, srchLast4] = await Promise.all([
       this.secrets.hasKey("search"),
       this.secrets.last4("search"),
     ]);
     view.key_present = {
-      llm: llmHas ? { present: true, last4: llmLast4 ?? "" } : { present: false },
+      llm: { present: true }, // shared proxy — no per-user key required
       search: srchHas ? { present: true, last4: srchLast4 ?? "" } : { present: false },
     };
     return view;
@@ -165,13 +162,12 @@ export function registerSettingsHandlers(): void {
     },
   );
 
+  // LLM key is now a shared proxy; only search key is user-configurable.
   register<{ which: "llm" | "search"; key: string }, { ok: true }>(
     IPC.UI_SETTINGS_PUT_KEY,
     SettingsPutKeyReqSchema,
     async (req) => {
-      if (!mgr.secrets.isEncryptionAvailable()) {
-        // We still store in memory but warn the renderer via the view banner.
-      }
+      if (req.which === "llm") return { ok: true }; // no-op
       await mgr.secrets.putKey(req.which, req.key);
       return { ok: true };
     },
@@ -181,6 +177,7 @@ export function registerSettingsHandlers(): void {
     IPC.UI_SETTINGS_CLEAR_KEY,
     SettingsClearKeyReqSchema,
     async (req) => {
+      if (req.which === "llm") return { ok: true }; // no-op
       await mgr.secrets.clearKey(req.which);
       return { ok: true };
     },
@@ -190,22 +187,21 @@ export function registerSettingsHandlers(): void {
     IPC.UI_SETTINGS_TEST_LLM,
     EmptyReqSchema.optional(),
     async () => {
-      await mgr.ensureLoaded();
-      const llmKey = await mgr.secrets.getKey("llm");
-      if (!llmKey) return { ok: false, error: "no_api_key" };
-      const settings = mgr.current();
-      const llm = createLlmClient(settings.llm.provider, { apiKey: llmKey });
       const start = Date.now();
       try {
-        await llm.chat({
-          model: settings.llm.model_id,
-          max_tokens: 8,
-          messages: [{ role: "user", content: "ping" }],
+        const res = await fetch("https://troll-breaker-browser.vercel.app/api/llm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "text-prime",
+            max_tokens: 8,
+            messages: [{ role: "user", content: "ping" }],
+          }),
         });
+        if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
         return { ok: true, latency_ms: Date.now() - start };
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        return { ok: false, error: msg };
+        return { ok: false, error: (err as Error).message };
       }
     },
   );

@@ -12,15 +12,8 @@ import { useUiStore } from "../state/store.js";
 import { useSettingsStore } from "../state/settings.js";
 import { ipc } from "../ipc.js";
 import { t } from "../lib/strings.js";
-import { MODEL_CATALOG } from "../../main/shared/schemas/settings.js";
 import type { SettingsView } from "../../main/shared/types.js";
 import { PrivacyPage } from "./PrivacyPage.js";
-
-const PROVIDER_OPTIONS = [
-  { value: "anthropic", label: "Anthropic" },
-  { value: "openai", label: "OpenAI" },
-  { value: "google", label: "Google (Gemini)" },
-] as const;
 
 const SEARCH_OPTIONS = [
   { value: "brave", label: "Brave Search" },
@@ -95,45 +88,11 @@ interface SectionProps {
   onRefresh: (v: SettingsView) => void;
 }
 
-function LlmSection({ view, onRefresh }: SectionProps) {
-  const [draftKey, setDraftKey] = useState("");
-  const [editing, setEditing] = useState(!view.key_present.llm.present);
+function LlmSection(_props: SectionProps) {
   const [testStatus, setTestStatus] = useState<
     null | { ok: boolean; latency_ms?: number; error?: string }
   >(null);
   const [testing, setTesting] = useState(false);
-
-  const provider = view.llm.provider;
-  const modelOptions = MODEL_CATALOG[provider];
-
-  async function changeProvider(p: "anthropic" | "openai" | "google") {
-    const firstModel = MODEL_CATALOG[p][0];
-    const updated = await ipc.settingsSet({
-      llm: { provider: p, model_id: firstModel },
-    });
-    onRefresh(updated);
-  }
-
-  async function changeModel(model_id: string) {
-    const updated = await ipc.settingsSet({ llm: { provider, model_id } });
-    onRefresh(updated);
-  }
-
-  async function saveKey() {
-    if (!draftKey) return;
-    await ipc.settingsPutKey("llm", draftKey);
-    setDraftKey("");
-    setEditing(false);
-    const v = await ipc.settingsGet();
-    onRefresh(v);
-  }
-
-  async function clearKey() {
-    await ipc.settingsClearKey("llm");
-    setEditing(true);
-    const v = await ipc.settingsGet();
-    onRefresh(v);
-  }
 
   async function runTest() {
     setTesting(true);
@@ -150,94 +109,29 @@ function LlmSection({ view, onRefresh }: SectionProps) {
 
   return (
     <Section title={t("section_llm")}>
-      <Field label={t("field_provider")}>
-        <select
-          value={provider}
-          onChange={(e) => void changeProvider(e.target.value as "anthropic" | "openai" | "google")}
-          className="h-8 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-sm"
+      <div className="mb-3 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs text-[var(--color-fg-muted)]">
+        <span className="font-medium text-[var(--color-fg)]">text-prime</span>
+        {"  ·  "}공유 프록시 (API 키 불필요)
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => void runTest()}
+          disabled={testing}
+          className="h-7 rounded border border-[var(--color-border)] px-3 text-xs hover:bg-white/10 disabled:opacity-50"
         >
-          {PROVIDER_OPTIONS.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
-          ))}
-        </select>
-      </Field>
-
-      <Field label={t("field_model")}>
-        <select
-          value={view.llm.model_id}
-          onChange={(e) => void changeModel(e.target.value)}
-          className="h-8 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-sm"
-        >
-          {modelOptions.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-      </Field>
-
-      <Field label={t("field_api_key")}>
-        {editing ? (
-          <div className="flex gap-1">
-            <input
-              type="password"
-              value={draftKey}
-              onChange={(e) => setDraftKey(e.target.value)}
-              placeholder="sk-..."
-              className="h-8 flex-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-sm"
-            />
-            <button
-              onClick={() => void saveKey()}
-              disabled={!draftKey}
-              className="h-8 rounded bg-[var(--color-accent)] px-3 text-xs text-white disabled:opacity-30"
-            >
-              {t("field_save")}
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <span className="flex-1 font-mono text-xs text-[var(--color-fg-muted)]">
-              ••••{view.key_present.llm.last4 ?? ""}
-            </span>
-            <button
-              onClick={() => setEditing(true)}
-              className="h-7 rounded px-2 text-xs text-[var(--color-fg-muted)] hover:bg-white/10"
-            >
-              편집
-            </button>
-            <button
-              onClick={() => void clearKey()}
-              className="h-7 rounded px-2 text-xs text-[var(--color-danger)] hover:bg-white/10"
-            >
-              {t("field_clear")}
-            </button>
-          </div>
+          {testing ? "테스트 중…" : t("field_test")}
+        </button>
+        {testStatus && testStatus.ok && (
+          <span className="text-xs text-[var(--color-success)]">
+            ✓ {testStatus.latency_ms ?? 0}ms
+          </span>
         )}
-      </Field>
-
-      {view.key_present.llm.present && (
-        <div className="mt-2 flex items-center gap-2">
-          <button
-            onClick={() => void runTest()}
-            disabled={testing}
-            className="h-7 rounded border border-[var(--color-border)] px-3 text-xs hover:bg-white/10 disabled:opacity-50"
-          >
-            {testing ? "테스트 중…" : t("field_test")}
-          </button>
-          {testStatus && testStatus.ok && (
-            <span className="text-xs text-[var(--color-success)]">
-              ✓ {testStatus.latency_ms ?? 0}ms
-            </span>
-          )}
-          {testStatus && !testStatus.ok && (
-            <span className="text-xs text-[var(--color-danger)]" title={testStatus.error}>
-              ✗ {testStatus.error?.slice(0, 30) ?? "실패"}
-            </span>
-          )}
-        </div>
-      )}
+        {testStatus && !testStatus.ok && (
+          <span className="text-xs text-[var(--color-danger)]" title={testStatus.error}>
+            ✗ {testStatus.error?.slice(0, 30) ?? "실패"}
+          </span>
+        )}
+      </div>
     </Section>
   );
 }
@@ -355,7 +249,6 @@ function PrivacySection({ view: _view, onRefresh }: SectionProps) {
     setConfirming(null);
   }
   async function doClearKeys() {
-    await ipc.settingsClearKey("llm");
     await ipc.settingsClearKey("search");
     const v = await ipc.settingsGet();
     onRefresh(v);

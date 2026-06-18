@@ -1,11 +1,10 @@
-// Build the agent dependency bundle from current settings + secrets.
-// Used by the orchestrator at request_id creation time so the bundle is
-// "frozen" against mid-flight provider changes (AGENT_DESIGN.md §6).
+// Build the agent dependency bundle from current settings.
+// LLM calls are routed through the shared Vercel proxy (no per-user API key).
 
 import { join } from "node:path";
 import { app } from "electron";
 import type { Settings } from "../shared/schemas/settings.js";
-import { createLlmClient } from "../lib/llm/index.js";
+import { OpenAIClient } from "../lib/llm/openai.js";
 import type { LlmClient } from "../lib/llm/types.js";
 import { BraveSearch } from "../lib/search/brave.js";
 import { MockSearch } from "../lib/search/mock.js";
@@ -14,7 +13,6 @@ import type { SecretsStore } from "../lib/storage/secrets.js";
 import { DiskKv } from "../lib/storage/disk.js";
 import { InMemoryKv, LayeredKv } from "../lib/storage/memory.js";
 import type { KvStore } from "../lib/storage/kv.js";
-import { makeError, IpcError } from "../shared/errors.js";
 
 export interface AgentDeps {
   llm: LlmClient;
@@ -22,6 +20,9 @@ export interface AgentDeps {
   kv: KvStore;
   model: string;
 }
+
+const PROXY_ENDPOINT = "https://troll-breaker-browser.vercel.app/api/llm";
+const PROXY_MODEL = "text-prime";
 
 let memoryKvSingleton: InMemoryKv | null = null;
 function getSharedMemoryKv(): InMemoryKv {
@@ -33,14 +34,10 @@ export async function buildAgentDeps(
   settings: Settings,
   secrets: SecretsStore,
 ): Promise<AgentDeps> {
-  const llmKey = await secrets.getKey("llm");
-  if (!llmKey) {
-    throw new IpcError(makeError("no_api_key", "LLM API key not configured"));
-  }
-
-  const llm = createLlmClient(settings.llm.provider, {
-    apiKey: llmKey,
-    defaultModel: settings.llm.model_id,
+  // All users share the proxy endpoint; no API key required from the user.
+  const llm = new OpenAIClient({
+    apiKey: "proxy",
+    endpoint: PROXY_ENDPOINT,
   });
 
   let search: SearchClient;
@@ -64,6 +61,6 @@ export async function buildAgentDeps(
     llm,
     search,
     kv,
-    model: settings.llm.model_id,
+    model: PROXY_MODEL,
   };
 }

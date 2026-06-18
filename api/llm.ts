@@ -11,7 +11,7 @@ export default async function handler(req: Request): Promise<Response> {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.THEGRID_API_KEY}`,
+      Authorization: `Bearer ${process.env["THEGRID_API_KEY"]}`,
     },
     body,
   });

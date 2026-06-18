@@ -1,9 +1,4 @@
 {
-  "buildCommand": "",
-  "outputDirectory": ".",
-  "functions": {
-    "api/llm.ts": {
-      "runtime": "edge"
-    }
-  }
+  "buildCommand": "echo skip",
+  "outputDirectory": "public"
 }

@@ -15,6 +15,7 @@ export function AgentPanel() {
 
   return (
     <div
+      data-testid="agent-panel"
       className={[
         "pointer-events-auto absolute bottom-4 right-16 z-30 flex w-[420px] max-w-[80vw] flex-col rounded-card border border-[var(--color-border)] bg-[var(--color-bg-elev)] shadow-[0_1px_2px_rgba(0,0,0,0.25)]",
         "max-h-[70vh]",

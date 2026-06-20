@@ -48,6 +48,8 @@ export const STRINGS = {
     panel_collapse: "접기",
     panel_regenerate: "다시 생성",
     panel_idle: "Idle",
+    panel_idle_hint:
+      "우측 사이드바의 Defense / Attack / Fact Check 를 누르거나, 페이지에서 텍스트를 선택 후 우클릭하세요.",
     // Verdict labels
     verdict_true: "사실",
     verdict_false: "거짓",
@@ -130,6 +132,8 @@ export const STRINGS = {
     panel_collapse: "Collapse",
     panel_regenerate: "Regenerate",
     panel_idle: "Idle",
+    panel_idle_hint:
+      "Click Defense / Attack / Fact Check in the right sidebar, or select text on the page and right-click.",
     verdict_true: "True",
     verdict_false: "False",
     verdict_mixed: "Partial",

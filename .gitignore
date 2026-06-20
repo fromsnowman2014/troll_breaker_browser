@@ -7,3 +7,6 @@ dist/
 .env
 .env.local
 coverage/
+e2e/screenshots/
+e2e/test-results/
+playwright-report/

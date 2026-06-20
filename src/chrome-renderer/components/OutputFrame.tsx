@@ -33,7 +33,13 @@ export function OutputFrame() {
   const revertCount = useChatStore((s) => s.revertStack.length);
   const popRevert = useChatStore((s) => s.popRevert);
 
-  if (!session) return null;
+  if (!session) {
+    return (
+      <div className="text-xs text-[var(--color-fg-muted)]">
+        {t("panel_idle_hint")}
+      </div>
+    );
+  }
 
   if (session.status === "loading") {
     const stage = session.stage;

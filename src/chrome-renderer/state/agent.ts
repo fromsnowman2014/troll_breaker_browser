@@ -37,7 +37,7 @@ interface AgentStoreShape {
 }
 
 export const useAgentStore = create<AgentStoreShape>((set) => ({
-  panelVisible: false,
+  panelVisible: true,
   session: null,
   start: (kind, request_id) =>
     set({

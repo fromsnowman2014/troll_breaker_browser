@@ -77,6 +77,7 @@ export function UrlBar() {
         </span>
         <input
           ref={inputRef}
+          data-testid="url-input"
           type="text"
           value={draft}
           spellCheck={false}

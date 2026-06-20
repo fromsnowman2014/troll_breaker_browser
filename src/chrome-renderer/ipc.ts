@@ -14,6 +14,7 @@ import type {
   AgentProgressEvt,
   AgentResultEvt,
   AgentErrorEvt,
+  AgentFromSelectionEvt,
 } from "../main/shared/types.js";
 
 type Reply<T> = { ok: true; data: T } | { ok: false; error: AppError };
@@ -115,6 +116,10 @@ export const ipc = {
     window.truthAndStrike.on(IPC.EVT_AGENT_RESULT, (p) => handler(p as AgentResultEvt)),
   onAgentError: (handler: (evt: AgentErrorEvt) => void) =>
     window.truthAndStrike.on(IPC.EVT_AGENT_ERROR, (p) => handler(p as AgentErrorEvt)),
+  onAgentFromSelection: (handler: (evt: AgentFromSelectionEvt) => void) =>
+    window.truthAndStrike.on(IPC.EVT_AGENT_FROM_SELECTION, (p) =>
+      handler(p as AgentFromSelectionEvt),
+    ),
 };
 
 export { IPC };

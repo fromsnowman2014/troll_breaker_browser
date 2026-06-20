@@ -137,6 +137,13 @@ export const TabNavStateEvtSchema = z.object({
   can_go_forward: z.boolean(),
 });
 
+export const AgentFromSelectionEvtSchema = z.object({
+  kind: z.enum(["fact-check", "defense", "attack"]),
+  selected_text: z.string().min(1).max(4000),
+  page_url: z.string().min(1),
+});
+export type AgentFromSelectionEvt = z.infer<typeof AgentFromSelectionEvtSchema>;
+
 export const MenuEvtSchema = z.object({
   action: z.enum([
     "new_tab",

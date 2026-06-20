@@ -89,8 +89,11 @@ Phase status:
     - `NavButtons.tsx` — back / forward / reload
     - `RightEdgeTrigger.tsx` — sparkle button → opens drawer
     - `SettingsDrawer.tsx`
+    - `SidebarRail.tsx` — right-edge icon rail (always visible)
+    - `SidebarPanel.tsx` — expanded sidebar with labeled items
+    - `SidebarItem.tsx` — shared rail/panel button
     - `OutputFrame.tsx` — result card host
-    - `ChatFrame.tsx` — buttons + input
+    - `ChatFrame.tsx` — buttons + input; honors `chatInputFocusToken` + `pendingAgentMode`
     - `DefenseCard.tsx` — Shield result render
     - `AttackCard.tsx` — Sword result render
     - `ScoreBars.tsx`
@@ -138,6 +141,7 @@ Native-only types introduced in this folder:
 - **Defense flow**: `chrome-renderer → ui:agent:defense → orchestrator.runDefense → vibe.getSiteVibe → parallel(fact, logic) → vibe.rewriteInVibe → evt:agent:result`
 - **Attack flow**: `chrome-renderer → ui:agent:attack → orchestrator.runAttack → vibe.getSiteVibe → evaluator.scoreAndCritique → vibe.finalizeConceptPost → evt:agent:result`
 - **Refine flow**: `chrome-renderer → ui:agent:refine → orchestrator.runRefine → vibe.rewriteInVibe(extraInstruction, conversationHistory) → evt:agent:result`
+- **Page selection → agent**: `tab_manager.ts` `context-menu` event → `evt:agent:from_selection { kind, selected_text, page_url }` → renderer `main.tsx` → existing `ipc.agentDefense` / `ipc.agentAttack` (fact-check sends `pipeline_hint: "fast"`)
 - **Pipeline selection** (post-Phase 3): `pickPipeline(text)` — `length > 500 → standard`, else `fast`. `deep` is opt-in.
 - **MCP-style tools** exposed to the LLM: `agents/tools.ts → toolDefs`. Handlers wired by orchestrator at call time.
 - **Structured-output contract**: every agent emitting structured data calls `lib/llm/structured.structuredChat(schema, ...)`. zod validation; one retry with error-injection.

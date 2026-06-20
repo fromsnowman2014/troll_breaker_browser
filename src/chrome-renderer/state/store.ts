@@ -10,13 +10,22 @@ type TabState = {
   removeTab: (id: string) => void;
 };
 
+export type AgentMode = "defense" | "attack" | "fact-check";
+
 type UiState = {
   drawerOpen: boolean;
   findOpen: boolean;
   urlBarFocusToken: number; // increment to ask UrlBar to focus+selectAll
+  sidebarCollapsed: boolean;
+  chatInputFocusToken: number;
+  pendingAgentMode: AgentMode | null;
   setDrawerOpen: (v: boolean) => void;
   setFindOpen: (v: boolean) => void;
   bumpUrlBarFocus: () => void;
+  setSidebarCollapsed: (v: boolean) => void;
+  toggleSidebar: () => void;
+  bumpChatInputFocus: () => void;
+  setPendingAgentMode: (m: AgentMode | null) => void;
 };
 
 type FindState = {
@@ -45,9 +54,17 @@ export const useUiStore = create<UiState>((set) => ({
   drawerOpen: false,
   findOpen: false,
   urlBarFocusToken: 0,
+  sidebarCollapsed: true,
+  chatInputFocusToken: 0,
+  pendingAgentMode: null,
   setDrawerOpen: (v) => set({ drawerOpen: v }),
   setFindOpen: (v) => set({ findOpen: v }),
   bumpUrlBarFocus: () => set((s) => ({ urlBarFocusToken: s.urlBarFocusToken + 1 })),
+  setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
+  toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+  bumpChatInputFocus: () =>
+    set((s) => ({ chatInputFocusToken: s.chatInputFocusToken + 1 })),
+  setPendingAgentMode: (m) => set({ pendingAgentMode: m }),
 }));
 
 export const useFindStore = create<FindState>((set) => ({

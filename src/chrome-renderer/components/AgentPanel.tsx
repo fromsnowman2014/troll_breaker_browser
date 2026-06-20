@@ -16,7 +16,7 @@ export function AgentPanel() {
   return (
     <div
       className={[
-        "pointer-events-auto absolute bottom-4 right-4 z-30 flex w-[420px] max-w-[90vw] flex-col rounded-card border border-[var(--color-border)] bg-[var(--color-bg-elev)] shadow-[0_1px_2px_rgba(0,0,0,0.25)]",
+        "pointer-events-auto absolute bottom-4 right-16 z-30 flex w-[420px] max-w-[80vw] flex-col rounded-card border border-[var(--color-border)] bg-[var(--color-bg-elev)] shadow-[0_1px_2px_rgba(0,0,0,0.25)]",
         "max-h-[70vh]",
       ].join(" ")}
     >

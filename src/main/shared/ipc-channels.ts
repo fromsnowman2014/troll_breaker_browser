@@ -43,6 +43,7 @@ export const IPC = {
   EVT_AGENT_PROGRESS: "evt:agent:progress",
   EVT_AGENT_RESULT: "evt:agent:result",
   EVT_AGENT_ERROR: "evt:agent:error",
+  EVT_AGENT_FROM_SELECTION: "evt:agent:from_selection",
 
   // Updater events (Phase 5)
   EVT_UPDATER_STATUS: "evt:updater:status",

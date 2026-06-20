@@ -16,6 +16,7 @@ export function createMainWindow(): BrowserWindow {
     height: 800,
     title: "Truth & Strike",
     backgroundColor: "#0f0f12",
+    show: false, // wait for ready-to-show to avoid blank-flash + 0-size races
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     webPreferences: {
       preload: CHROME_PRELOAD,
@@ -26,6 +27,10 @@ export function createMainWindow(): BrowserWindow {
       // see ARCHITECTURE.md §4 + tab_manager.ts.
       sandbox: false,
     },
+  });
+
+  win.once("ready-to-show", () => {
+    win.show();
   });
 
   if (process.env["ELECTRON_RENDERER_URL"]) {

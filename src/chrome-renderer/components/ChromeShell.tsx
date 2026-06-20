@@ -10,6 +10,8 @@ import { FindBar } from "./FindBar.js";
 import { Toast } from "./Toast.js";
 import { AgentPanel } from "./AgentPanel.js";
 import { UpdaterToast } from "./UpdaterToast.js";
+import { SidebarRail } from "./SidebarRail.js";
+import { SidebarPanel } from "./SidebarPanel.js";
 
 export function ChromeShell() {
   const chromeRef = useRef<HTMLDivElement>(null);
@@ -51,6 +53,8 @@ export function ChromeShell() {
       <main className="relative flex-1" aria-hidden="true">
         <FindBar />
         <AgentPanel />
+        <SidebarPanel />
+        <SidebarRail />
       </main>
       <SettingsDrawer />
       <Toast />

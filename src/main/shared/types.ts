@@ -12,6 +12,7 @@ export type {
   DefenseRequest,
   AttackRequest,
   RefineRequest,
+  AgentFromSelectionEvt,
 } from "./schemas/ipc.js";
 
 export type {

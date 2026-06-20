@@ -10,28 +10,49 @@
 // below the chrome (top inset = current chromeTopInset). Tab switch toggles
 // setVisible (do NOT destroy on switch — perf hit).
 
-import { BrowserWindow, WebContentsView } from "electron";
+import { BrowserWindow, Menu, MenuItem, WebContentsView } from "electron";
 import { ulid } from "ulid";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Tab } from "./tab.js";
 import { IPC } from "../shared/ipc-channels.js";
 import type { TabSummary } from "../shared/schemas/ipc.js";
+import { log } from "../lib/log.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PAGE_PRELOAD = join(__dirname, "../preload/page-preload.cjs");
+
+// Default chrome inset before the renderer measures itself + reports back via
+// ui:tab:chrome_bounds. titleBarStyle="hiddenInset" (mac) reserves ~28px for
+// traffic lights overlaid on the content area; TabStrip h-9 = 36, NavRow h-14
+// = 56 → total ~120 on mac. Windows/Linux use a native title bar so content
+// excludes it and the inset is just 92.
+const DEFAULT_CHROME_INSET = process.platform === "darwin" ? 120 : 92;
+const FALLBACK_WIDTH = 1280;
+const FALLBACK_HEIGHT = 800;
 
 export class TabManager {
   private readonly tabs = new Map<string, Tab>();
   private order: string[] = [];
   private activeId: string | null = null;
-  private chromeTopInset = 92; // tabstrip 36 + navrow 56; updated by renderer
+  private chromeTopInset = DEFAULT_CHROME_INSET;
   private destroyed = false;
 
   constructor(private readonly window: BrowserWindow) {
     window.on("resize", () => this.resizeActive());
     window.on("close", () => {
       this.destroyed = true;
+    });
+    // Race-condition defense: window can return [0, 0] from getContentSize()
+    // before it's shown. Re-sync on ready-to-show + first chrome paint so the
+    // active WebContentsView gets correct bounds even if openTab raced ahead.
+    window.once("ready-to-show", () => {
+      log.info("window ready-to-show; re-syncing tab bounds");
+      this.resizeActive();
+    });
+    window.webContents.once("did-finish-load", () => {
+      log.info("chrome renderer did-finish-load; re-syncing tab bounds");
+      this.resizeActive();
     });
   }
 
@@ -63,12 +84,46 @@ export class TabManager {
     };
     this.tabs.set(id, tab);
     this.order.push(id);
+    log.info(`openTab id=${id.slice(-6)} url=${initialUrl}`);
+
+    // Seed initial bounds BEFORE addChildView. If the window isn't shown yet,
+    // getContentSize() returns [0, 0] and the view would be created at 0×0 —
+    // invisible until something else triggers a resize. Fall back to the
+    // intended window size; ready-to-show will re-sync to actual.
+    const [w0, h0] = this.window.getContentSize();
+    const initW = w0 && w0 > 0 ? w0 : FALLBACK_WIDTH;
+    const initH = h0 && h0 > 0 ? h0 : FALLBACK_HEIGHT;
+    const inset = this.chromeTopInset;
+    view.setBounds({
+      x: 0,
+      y: inset,
+      width: initW,
+      height: Math.max(0, initH - inset),
+    });
+
     this.window.contentView.addChildView(view);
     this.wireEvents(tab);
-    void view.webContents.loadURL(initialUrl).catch(() => {
-      // navigation errors surface via did-fail-load; ignore the promise rejection.
+    void view.webContents.loadURL(initialUrl).catch((err) => {
+      log.warn(`loadURL initial failed id=${id.slice(-6)} url=${initialUrl}`, err);
     });
     this.activate(id);
+    log.info(
+      `openTab done id=${id.slice(-6)} bounds=${initW}x${Math.max(0, initH - inset)} inset=${inset}`,
+    );
+
+    // Debug-only: auto-open page DevTools so we can inspect what the page is
+    // actually doing (network, console). Detached so it doesn't steal real
+    // estate from the small panel.
+    if (process.env["TS_DEBUG"] === "1") {
+      setTimeout(() => {
+        try {
+          view.webContents.openDevTools({ mode: "detach" });
+        } catch {
+          /* noop */
+        }
+      }, 500);
+    }
+
     return this.toSummary(tab);
   }
 
@@ -107,7 +162,10 @@ export class TabManager {
   navigate(id: string, url: string): void {
     const tab = this.tabs.get(id);
     if (!tab) return;
-    void tab.view.webContents.loadURL(url).catch(() => undefined);
+    log.info(`navigate id=${id.slice(-6)} url=${url}`);
+    void tab.view.webContents.loadURL(url).catch((err) => {
+      log.warn(`loadURL failed id=${id.slice(-6)} url=${url}`, err);
+    });
   }
 
   reload(id: string, hard: boolean): void {
@@ -200,15 +258,21 @@ export class TabManager {
     const active = this.tabs.get(this.activeId);
     if (!active) return;
     const size = this.window.getContentSize();
-    const w = size[0] ?? 0;
-    const h = size[1] ?? 0;
+    // Use fallback sizes when window isn't shown yet, so the view is still
+    // visible (rather than 0×0 and invisible).
+    const w = size[0] && size[0] > 0 ? size[0] : FALLBACK_WIDTH;
+    const h = size[1] && size[1] > 0 ? size[1] : FALLBACK_HEIGHT;
     const top = this.chromeTopInset;
-    active.view.setBounds({
+    const bounds = {
       x: 0,
       y: top,
       width: Math.max(0, w),
       height: Math.max(0, h - top),
-    });
+    };
+    active.view.setBounds(bounds);
+    log.info(
+      `resizeActive id=${this.activeId.slice(-6)} bounds=${bounds.width}x${bounds.height} y=${bounds.y}`,
+    );
   }
 
   private toSummary(tab: Tab): TabSummary {
@@ -266,6 +330,7 @@ export class TabManager {
 
     wc.on("did-navigate", (_e, url) => {
       tab.url = url;
+      log.info(`did-navigate id=${tab.tab_id.slice(-6)} url=${url}`);
       this.emit(IPC.EVT_TAB_URL, { tab_id: tab.tab_id, url });
       this.emitNavState(tab);
     });
@@ -276,9 +341,34 @@ export class TabManager {
       this.emitNavState(tab);
     });
 
+    // Surface main-frame navigation failures via the existing tab-crash
+    // channel. -3 == ERR_ABORTED happens on user-initiated cancellations
+    // (typing a new URL mid-load); ignore.
+    wc.on("did-fail-load", (_e, errorCode, errorDescription, validatedURL, isMainFrame) => {
+      if (!isMainFrame) return;
+      if (errorCode === -3) return;
+      log.warn(
+        `did-fail-load id=${tab.tab_id.slice(-6)} code=${errorCode} url=${validatedURL} desc=${errorDescription}`,
+      );
+      this.emit(IPC.EVT_TAB_CRASHED, {
+        tab_id: tab.tab_id,
+        reason: `${errorDescription} (${errorCode}) — ${validatedURL}`,
+      });
+    });
+
     wc.on("render-process-gone", (_e, details) => {
+      log.error(`render-process-gone id=${tab.tab_id.slice(-6)} reason=${details.reason}`);
       this.emit(IPC.EVT_TAB_CRASHED, { tab_id: tab.tab_id, reason: details.reason });
     });
+
+    // Debug-only: forward page console messages to main stdout so the user
+    // can see what the page is doing without opening DevTools manually.
+    if (process.env["TS_DEBUG"] === "1") {
+      wc.on("console-message", (event) => {
+        const msg = event.message?.slice(0, 200) ?? "";
+        log.info(`[page id=${tab.tab_id.slice(-6)}] ${msg}`);
+      });
+    }
 
     wc.on("found-in-page", (_e, result) => {
       this.emit(IPC.EVT_TAB_FIND_RESULT, {
@@ -293,6 +383,36 @@ export class TabManager {
     wc.setWindowOpenHandler(({ url }) => {
       this.openTab(url);
       return { action: "deny" };
+    });
+
+    // Right-click on selected page text → Fact Check / Defense / Attack menu.
+    // Selected text rides into existing agentDefense/agentAttack via the
+    // EVT_AGENT_FROM_SELECTION renderer event.
+    wc.on("context-menu", (_e, params) => {
+      const sel = params.selectionText?.trim();
+      if (!sel) return;
+      const pageUrl = wc.getURL();
+      const kinds = [
+        { kind: "fact-check" as const, label: "Fact Check", cap: 2000 },
+        { kind: "defense" as const, label: "🛡 Defense", cap: 2000 },
+        { kind: "attack" as const, label: "⚔ Attack", cap: 4000 },
+      ];
+      const menu = new Menu();
+      for (const { kind, label, cap } of kinds) {
+        menu.append(
+          new MenuItem({
+            label,
+            click: () => {
+              this.emit(IPC.EVT_AGENT_FROM_SELECTION, {
+                kind,
+                selected_text: sel.slice(0, cap),
+                page_url: pageUrl,
+              });
+            },
+          }),
+        );
+      }
+      menu.popup({ window: this.window });
     });
   }
 }

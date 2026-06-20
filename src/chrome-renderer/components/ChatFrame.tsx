@@ -1,9 +1,9 @@
 // Chat frame — Defense/Attack buttons + free-form input.
 // Phase 2: Attack wired, Refine wired (Enter when result present).
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAgentStore } from "../state/agent.js";
-import { useTabStore } from "../state/store.js";
+import { useTabStore, useUiStore } from "../state/store.js";
 import { useSettingsStore } from "../state/settings.js";
 import { useChatStore } from "../state/chat.js";
 import { ipc } from "../ipc.js";
@@ -11,6 +11,7 @@ import { t } from "../lib/strings.js";
 
 export function ChatFrame() {
   const [input, setInput] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const session = useAgentStore((s) => s.session);
   const startAgent = useAgentStore((s) => s.start);
   const setError = useAgentStore((s) => s.setError);
@@ -19,21 +20,32 @@ export function ChatFrame() {
   const prior = useChatStore((s) => s.prior_request_id);
   const setPrior = useChatStore((s) => s.setPrior);
   const pushRevert = useChatStore((s) => s.pushRevert);
+  const focusToken = useUiStore((s) => s.chatInputFocusToken);
+  const pendingMode = useUiStore((s) => s.pendingAgentMode);
+  const setPendingMode = useUiStore((s) => s.setPendingAgentMode);
+
+  useEffect(() => {
+    if (focusToken === 0) return;
+    textareaRef.current?.focus();
+  }, [focusToken]);
 
   const hasKey = settings.key_present.llm.present;
   const loading = session?.status === "loading";
   const hasResult = session?.status === "result";
   const refineMode = hasResult && prior !== null;
 
-  async function runDefense() {
+  async function runDefense(factCheckOnly = false) {
     const claim = input.trim();
     if (!claim || !activeTab || !hasKey) return;
     setPrior(null);
+    setPendingMode(null);
     try {
-      const { request_id } = await ipc.agentDefense({
+      const req: Parameters<typeof ipc.agentDefense>[0] = {
         claim,
         page_url: activeTab.url,
-      });
+      };
+      if (factCheckOnly) req.pipeline_hint = "fast";
+      const { request_id } = await ipc.agentDefense(req);
       startAgent("defense", request_id);
       setPrior(request_id);
     } catch (err) {
@@ -47,6 +59,7 @@ export function ChatFrame() {
     const draft = input.trim();
     if (!draft || !activeTab || !hasKey) return;
     setPrior(null);
+    setPendingMode(null);
     let textarea_token: string | undefined;
     try {
       const focusInfo = await ipc.pageTextareaFocused();
@@ -97,7 +110,13 @@ export function ChatFrame() {
   }
 
   const canSubmit = hasKey && input.trim().length > 0 && !loading;
-  const primaryAction = refineMode ? runRefine : runDefense;
+  const primaryAction = refineMode
+    ? runRefine
+    : pendingMode === "attack"
+      ? runAttack
+      : pendingMode === "fact-check"
+        ? () => runDefense(true)
+        : runDefense;
   const quickActions = ["더 짧게", "더 비꼬게", "팩트 줄이기", "펀치라인 강화"];
 
   async function fireChip(instruction: string) {
@@ -127,7 +146,7 @@ export function ChatFrame() {
     <div className="flex flex-col gap-2 border-t border-[var(--color-border)] pt-3">
       <div className="flex gap-2">
         <button
-          onClick={() => void runDefense()}
+          onClick={() => void runDefense(pendingMode === "fact-check")}
           disabled={!canSubmit}
           aria-label={t("btn_defense")}
           title={!hasKey ? t("no_api_key_tooltip") : undefined}
@@ -135,10 +154,12 @@ export function ChatFrame() {
             "inline-flex h-9 items-center gap-1 rounded-full px-4 text-sm transition-colors",
             !canSubmit
               ? "bg-white/5 text-[var(--color-fg-muted)] opacity-60"
-              : "bg-[var(--color-accent)] text-white hover:opacity-90",
+              : pendingMode === "attack"
+                ? "border border-[var(--color-border)] text-[var(--color-fg)] hover:bg-white/5"
+                : "bg-[var(--color-accent)] text-white hover:opacity-90",
           ].join(" ")}
         >
-          {t("btn_defense")}
+          {pendingMode === "fact-check" ? t("sidebar_fact_check") : t("btn_defense")}
         </button>
         <button
           onClick={() => void runAttack()}
@@ -149,7 +170,9 @@ export function ChatFrame() {
             "inline-flex h-9 items-center gap-1 rounded-full px-4 text-sm transition-colors",
             !canSubmit
               ? "bg-white/5 text-[var(--color-fg-muted)] opacity-60"
-              : "border border-[var(--color-border)] text-[var(--color-fg)] hover:bg-white/5",
+              : pendingMode === "attack"
+                ? "bg-[var(--color-accent)] text-white hover:opacity-90"
+                : "border border-[var(--color-border)] text-[var(--color-fg)] hover:bg-white/5",
           ].join(" ")}
         >
           {t("btn_attack")}
@@ -176,6 +199,7 @@ export function ChatFrame() {
       )}
       <div className="flex gap-2">
         <textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={t("chat_placeholder")}
